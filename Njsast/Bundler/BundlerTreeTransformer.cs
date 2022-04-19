@@ -94,6 +94,7 @@ class BundlerTreeTransformer : TreeTransformer
             if (!_cache.TryGetValue(resolvedName, out var reqSource))
                 throw new ApplicationException("Cannot find " + resolvedName + " imported from " +
                                                _currentSourceFile!.Name);
+            reqSource.CreateWholeExport(Array.Empty<string>());
             var theDef = CheckIfNewlyUsedSymbolIsUnique((AstSymbol)reqSource.Exports![Array.Empty<string>()]);
             return new AstSymbolRef(node, theDef, SymbolUsage.Read);
         }
@@ -156,15 +157,15 @@ class BundlerTreeTransformer : TreeTransformer
                 {
                     if (exportNode is AstSymbol trueSymbol)
                     {
-                        var theDef = CheckIfNewlyUsedSymbolIsUnique(trueSymbol);
-                        return new AstSymbolRef(node, theDef, SymbolUsage.Read);
+                        // not needed symbol must be already unique: var theDef = CheckIfNewlyUsedSymbolIsUnique(trueSymbol);
+                        return new AstSymbolRef(node, ResolveTrueSymbolDef(trueSymbol), SymbolUsage.Read);
                     }
 
                     return exportNode;
                 }
             }
 
-            if (!import2.Item1.Exports!.IsJustRoot && import2.Item2.Length == 1)
+            if (!import2.Item1.Exports!.IsJustRoot && import2.Item2.Length <= 1)
             {
                 // This is not error because it could be just TypeScript interface
                 return new AstSymbolRef("undefined");
@@ -172,6 +173,16 @@ class BundlerTreeTransformer : TreeTransformer
         }
 
         return null;
+    }
+
+    SymbolDef ResolveTrueSymbolDef(AstSymbol astSymbol)
+    {
+        if (_splitInfo.ImportsFromOtherBundles.TryGetValue(astSymbol, out var importFromOtherBundle))
+        {
+            astSymbol = importFromOtherBundle.Ref!;
+        }
+
+        return astSymbol.Thedef!;
     }
 
     SymbolDef CheckIfNewlyUsedSymbolIsUnique(AstSymbol astSymbol)
@@ -197,6 +208,10 @@ class BundlerTreeTransformer : TreeTransformer
             return Remove;
         if (node is AstDefinitions { Definitions.Count: 0 })
             return Remove;
+        if (node is AstSequence { Expressions: { Count: 2 } expressions } && expressions[0] is AstNumber { Value:0 } && expressions[1] is AstSymbolRef)
+        {
+            return expressions[1];
+        }
         return node;
     }
 }

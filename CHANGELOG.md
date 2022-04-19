@@ -2,9 +2,178 @@
 
 ## [unreleased]
 
+### Fixed
+
+Interactive mode with enabled spriting after change, all sprites shown same icon.
+
+## 2.4.1
+
+### Fixed
+
+Two bundler bugs.
+
+## 2.4.0
+
+### Added
+
+Load assets also from `.bbrc` file not just `package.json`.
+
+## 2.3.2
+
+### Fixed
+
+Arrow with await `async v => await v`.
+
+## 2.3.1
+
+### Fixed
+
+Compression bug related to destructuring.
+
+## 2.3.0
+
+### Fixed
+
+Preserve Tests results even after test client is disconnected. New test run will clear all these old results.
+
+Scss import imports failed.
+
+JS Relative import of path failed.
+
+## 2.2.3
+
+### Fixed
+
+Dead code elimination didn't eliminated expansion creating invalid code.
+
+## 2.2.2
+
+### Fixed
+
+Bundling of template string containing `\$`
+
+## 2.2.1
+
+### Fixed
+
+- bundler failed on `class { get [x](){} }`
+
+## 2.2.0
+
+### Changed
+
+- Default TypeScript version is 4.6.2
+
+### Added
+
+Allow to use Template strings inside bobril-g11n.t when targeting ES2015.
+
+## 2.1.4
+
+### Fixed
+
+Parsing and printing `{ [key]: value }`.
+
+## 2.1.3
+
+### Fixed
+
+Bundling bug.
+
+Jasmine 4.0.0 was upgraded in place to 4.0.1. Also fixing problem with unhandled promise rejection and now showing available stack in console.
+
+## 2.1.2
+
+### Fixed
+
+Regression in 2.1.1 with bb/test.
+
+Coverage works for arrow functions with just expression.
+
+## 2.1.1
+
+### Fixed
+
+Headless Chrome on Windows is restarted after each test run to workaround hang of tests.
+
+`global` is not anymore defined in TypeScript and ESM JS files (it allows to declare it as let or const under same name). Just use `globalThis` instead if you have to.
+
+Fixed parsing of expansion in object spread in argument of arrow function.
+
+## 2.1.0
+
+### Added
+
+- Jasmine 4.0.0: "bobril": { "jasmineVersion" : "4.0" }
+
+## 2.0.0
+
+### New defaults
+
+Target and TS Libs are ES2019. ES5 target is still supported just not default anymore.
+
+### Removed
+
+Old Bundler in JS. Command line option -x to choose bundler. New Njsast based bundler is now only options.
+
+## 1.64.0
+
+### Changed
+
+- Default TypeScript version is 4.5.5
+
+### Updated
+
+- TypeScript Targets enum to include up to ES2021.
+- Njsast with fix of Array Hole in arguments
+
+## 1.63.1
+
+### Updated
+
+Njsast with bundling fix.
+
+## 1.63.0
+
+### Added
+
+Library Bundling mode. (Define/Enable in .bbrc)
+
+### Updated
+
+Njsast with fixes and features.
+
+## 1.62.1
+
+### Fixed
+
+Fixed problem with styleDef containing sequence (due to downleveling to ES5).
+
+## 1.62.0
+
+### Updated
+
+Njsast with fixes and optimizations.
+
+## 1.61.0
+
+### Added
+
+- Support for osx.arm64
+- New command gen-tsconfig
+
+## 1.60.1
+
+### Fixed
+
+- Default target must be still ES5
+
+## 1.60.0
+
 ### Added
 
 - Support for ES2015+ (WIP)
+- Add build errors to JUnit xml
 
 ## 1.59.0
 

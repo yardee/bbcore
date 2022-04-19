@@ -9,72 +9,83 @@ using Lib.Utils;
 using Lib.Utils.Logger;
 using Njsast.SourceMap;
 
-namespace Lib.Composition
+namespace Lib.Composition;
+
+class TestServer
 {
-    class TestServer
+    public readonly ConcurrentDictionary<TestServerConnectionHandler, TestServerConnectionHandler> Clients = new();
+    public readonly ConcurrentDictionary<TestServerConnectionHandler, TestResultsHolder> LastResults = new();
+
+    int _runid;
+    public readonly Subject<Unit> OnChange = new();
+    public readonly Subject<Unit> OnTestingStarted = new();
+    public readonly Subject<TestResultsHolder> OnTestResults = new();
+    public readonly Subject<TestResultsHolder> OnCoverageResults = new();
+    internal readonly Subject<Unit> OnChangeRaw = new();
+    public bool Verbose;
+    public ILogger Logger;
+
+    public TestServer(bool verbose, ILogger logger)
     {
-        public readonly ConcurrentDictionary<TestServerConnectionHandler, TestServerConnectionHandler> Clients =
-            new ConcurrentDictionary<TestServerConnectionHandler, TestServerConnectionHandler>();
+        Verbose = verbose;
+        Logger = logger;
+        OnChangeRaw.Throttle(TimeSpan.FromMilliseconds(500)).Subscribe(OnChange);
+    }
 
-        int _runid;
-        public Subject<Unit> OnChange = new Subject<Unit>();
-        public Subject<Unit> OnTestingStarted = new Subject<Unit>();
-        public Subject<TestResultsHolder> OnTestResults = new Subject<TestResultsHolder>();
-        public Subject<TestResultsHolder> OnCoverageResults = new Subject<TestResultsHolder>();
-        internal Subject<Unit> OnChangeRaw = new Subject<Unit>();
-        public bool Verbose;
-        public ILogger Logger;
+    public string Url { get; internal set; }
+    public IDictionary<string, SourceMap> SourceMaps { get; internal set; }
 
-        public TestServer(bool verbose, ILogger logger)
+    public ILongPollingConnectionHandler NewConnectionHandler()
+    {
+        return new TestServerConnectionHandler(this);
+    }
+
+    public void StartTest(string url, IDictionary<string, SourceMap> sourceMaps, string specFilter = "")
+    {
+        _runid++;
+        Url = url;
+        SourceMaps = sourceMaps;
+        LastResults.Clear();
+        foreach (var client in Clients.Keys)
         {
-            Verbose = verbose;
-            Logger = logger;
-            OnChangeRaw.Throttle(TimeSpan.FromMilliseconds(500)).Subscribe(OnChange);
+            client.StartTest(url, _runid, specFilter);
+        }
+    }
+
+    internal void NotifyFinishedResults(TestServerConnectionHandler client, TestResultsHolder newResults)
+    {
+        LastResults.AddOrUpdate(client, newResults, (_, _) => newResults);
+        OnTestResults.OnNext(newResults);
+    }
+
+    internal void NotifySomeChange()
+    {
+        OnChangeRaw.OnNext(Unit.Default);
+    }
+
+    internal void NotifyTestingStarted()
+    {
+        OnTestingStarted.OnNext(Unit.Default);
+    }
+
+    internal TestServerState GetState()
+    {
+        var result = new TestServerState();
+        var clients = new HashSet<TestServerConnectionHandler>();
+        foreach (var client in Clients.Keys)
+        {
+            clients.Add(client);
+            result.Agents.Add(client.GetLatestResults());
         }
 
-        public string Url { get; internal set; }
-        public IDictionary<string, SourceMap> SourceMaps { get; internal set; }
-
-        public ILongPollingConnectionHandler NewConnectionHandler()
+        foreach (var (client, results) in LastResults)
         {
-            return new TestServerConnectionHandler(this);
-        }
-
-        public void StartTest(string url, IDictionary<string, SourceMap> sourceMaps, string specFilter = "")
-        {
-            _runid++;
-            Url = url;
-            SourceMaps = sourceMaps;
-            foreach (var client in Clients.Keys)
+            if (clients.Add(client))
             {
-                client.StartTest(url, _runid, specFilter);
+                result.Agents.Add(results);
             }
         }
 
-        internal void NotifyFinishedResults(TestResultsHolder oldResults)
-        {
-            OnTestResults.OnNext(oldResults);
-        }
-
-        internal void NotifySomeChange()
-        {
-            OnChangeRaw.OnNext(Unit.Default);
-        }
-
-        internal void NotifyTestingStarted()
-        {
-            OnTestingStarted.OnNext(Unit.Default);
-        }
-
-        internal TestServerState GetState()
-        {
-            TestServerState result = new TestServerState();
-            foreach (var client in Clients.Keys)
-            {
-                result.Agents.Add(client.GetLatestResults());
-            }
-
-            return result;
-        }
+        return result;
     }
 }

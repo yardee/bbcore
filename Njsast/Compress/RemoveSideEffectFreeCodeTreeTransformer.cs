@@ -57,7 +57,7 @@ public class RemoveSideEffectFreeCodeTreeTransformer : TreeTransformer
     // Symbol is considered cloned when there is just single initialization by constant symbol
     // var a = 42; var b = a;
     // b could be replaced by a and that what this map contains _clonedSymbolMap[Symbol"b"] = Symbol"a";
-    readonly RefDictionary<SymbolDef, SymbolDef> _clonedSymbolMap = new RefDictionary<SymbolDef, SymbolDef>();
+    readonly RefDictionary<SymbolDef, SymbolDef> _clonedSymbolMap = new();
 
     protected override AstNode? Before(AstNode node, bool inList)
     {
@@ -87,7 +87,7 @@ public class RemoveSideEffectFreeCodeTreeTransformer : TreeTransformer
                     if (lambda.Purpose == null)
                         lambda.Purpose = DetectPurpose(lambda);
 
-                    NeedValue = lambda.Body is { Count:1 } body && body[0].IsExpression();
+                    NeedValue = lambda.Body is { Count: 1 } body && body[0].IsExpression();
                     TransformList(ref lambda.Body);
                     NeedValue = true;
                     return node;
@@ -222,6 +222,18 @@ public class RemoveSideEffectFreeCodeTreeTransformer : TreeTransformer
 
                     return null;
                 }
+                case AstPrefixedTemplateString prefixedTemplateString:
+                {
+                    if (prefixedTemplateString.TemplateString.Segments.Count == 1 &&
+                        prefixedTemplateString.TemplateString.Segments[0] is AstTemplateSegment s &&
+                        prefixedTemplateString.Prefix is AstDot { PropertyAsString: "raw" } dot &&
+                        dot.Expression.IsSymbolDef().IsGlobalSymbol() == "String")
+                    {
+                        return new AstString(s.Source, s.Start, s.End, s.Raw);
+                    }
+
+                    break;
+                }
             }
 
             return null;
@@ -243,6 +255,25 @@ public class RemoveSideEffectFreeCodeTreeTransformer : TreeTransformer
                     return Remove;
                 case AstWith _:
                     return node;
+                case AstPrefixedTemplateString prefixedTemplate:
+                    if (IsWellKnownPureFunction(prefixedTemplate.Prefix, false))
+                    {
+                        node = prefixedTemplate.TemplateString;
+                        continue;
+                    }
+
+                    return node;
+                case AstTemplateString templateString:
+                {
+                    var res = new AstSequence(node.Source, node.Start, node.End);
+                    foreach (var element in templateString.Segments)
+                    {
+                        if (element is AstTemplateSegment) continue;
+                        res.AddIntelligently(Transform(element));
+                    }
+
+                    return res.Expressions.Count == 0 ? Remove : res;
+                }
                 case AstArray arr:
                 {
                     var res = new AstSequence(node.Source, node.Start, node.End);
@@ -252,6 +283,11 @@ public class RemoveSideEffectFreeCodeTreeTransformer : TreeTransformer
                     }
 
                     return res.Expressions.Count == 0 ? Remove : res;
+                }
+                case AstExpansion expansion:
+                {
+                    node = expansion.Expression;
+                    continue;
                 }
                 case AstPropAccess propAccess:
                 {
@@ -318,6 +354,7 @@ public class RemoveSideEffectFreeCodeTreeTransformer : TreeTransformer
                     {
                         return Remove;
                     }
+
                     goto default;
                 }
                 case AstLambda lambda:
@@ -342,7 +379,7 @@ public class RemoveSideEffectFreeCodeTreeTransformer : TreeTransformer
                 case AstCall call:
                 {
                     var symbol = call.Expression.IsSymbolDef();
-                    if (symbol is { IsSingleInit: true, Init: AstLambda { Pure: true } } ||
+                    if (symbol is { IsSingleInitAndDeeplyConst: true, Init: AstLambda { Pure: true } } ||
                         IsWellKnownPureFunction(call.Expression, call is AstNew))
                     {
                         var res = new AstSequence(node.Source, node.Start, node.End);
@@ -500,8 +537,8 @@ public class RemoveSideEffectFreeCodeTreeTransformer : TreeTransformer
                             return Remove;
                         }
 
-                        if (varDef.Value.IsSymbolDef() is { } rightSymbolDef && def.IsSingleInit &&
-                            rightSymbolDef.IsSingleInit)
+                        if (varDef.Value.IsSymbolDef() is { } rightSymbolDef && def.IsSingleInitAndDeeplyConst &&
+                            rightSymbolDef.IsSingleInitAndDeeplyConst)
                         {
                             _clonedSymbolMap.GetOrAddValueRef(def) = rightSymbolDef;
                         }
@@ -793,6 +830,13 @@ public class RemoveSideEffectFreeCodeTreeTransformer : TreeTransformer
     {
         return globalSymbol switch
         {
+            "String" => propName switch
+            {
+                "raw" => true,
+                "fromCharCode" => true,
+                "fromCodePoint" => true,
+                _ => false
+            },
             "Object" => propName switch
             {
                 "constructor" => true,

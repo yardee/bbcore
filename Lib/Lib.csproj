@@ -8,16 +8,19 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove="Bundler\Js\bundler.js" />
-    <None Remove="Bundler\Js\uglify.js" />
     <None Remove="CSSProcessor\bbcss.js" />
     <None Remove="CSSProcessor\bundle.min.js" />
+    <None Remove="SCSSProcessor\bbscss.js" />
+    <None Remove="SCSSProcessor\sass.dart.js" />
     <None Remove="ToolsDir\jasmine-boot299.js" />
     <None Remove="ToolsDir\jasmine-boot330.js" />
+    <None Remove="ToolsDir\jasmine-boot400.js" />
     <None Remove="ToolsDir\jasmine299.js" />
     <None Remove="ToolsDir\jasmine330.js" />
+    <None Remove="ToolsDir\jasmine400.js" />
     <None Remove="ToolsDir\jasmine299.d.ts" />
     <None Remove="ToolsDir\jasmine330.d.ts" />
+    <None Remove="ToolsDir\jasmine400.d.ts" />
     <None Remove="ToolsDir\liveReload.js" />
     <None Remove="ToolsDir\loader.js" />
     <None Remove="ToolsDir\localeDefs.json" />
@@ -29,16 +32,19 @@
     <None Remove="TSCompiler\tslib.js" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Bundler\Js\bundler.js" />
-    <EmbeddedResource Include="Bundler\Js\uglify.js" />
     <EmbeddedResource Include="CSSProcessor\bbcss.js" />
     <EmbeddedResource Include="CSSProcessor\bundle.min.js" />
+    <EmbeddedResource Include="SCSSProcessor\bbscss.js" />
+    <EmbeddedResource Include="SCSSProcessor\sass.dart.js" />
     <EmbeddedResource Include="ToolsDir\jasmine-boot299.js" />
     <EmbeddedResource Include="ToolsDir\jasmine-boot330.js" />
+    <EmbeddedResource Include="ToolsDir\jasmine-boot400.js" />
     <EmbeddedResource Include="ToolsDir\jasmine299.js" />
     <EmbeddedResource Include="ToolsDir\jasmine330.js" />
+    <EmbeddedResource Include="ToolsDir\jasmine400.js" />
     <EmbeddedResource Include="ToolsDir\jasmine299.d.ts" />
     <EmbeddedResource Include="ToolsDir\jasmine330.d.ts" />
+    <EmbeddedResource Include="ToolsDir\jasmine400.d.ts" />
     <EmbeddedResource Include="ToolsDir\liveReload.js" />
     <EmbeddedResource Include="ToolsDir\loader.js" />
     <EmbeddedResource Include="ToolsDir\localeDefs.json" />
@@ -59,6 +65,7 @@
     <PackageReference Include="Microsoft.ClearScript.V8" Version="7.1.7" />
     <PackageReference Include="Microsoft.ClearScript.V8.Native.linux-x64" Version="7.1.7" />
     <PackageReference Include="Microsoft.ClearScript.V8.Native.osx-x64" Version="7.1.7" />
+    <PackageReference Include="Microsoft.ClearScript.V8.Native.osx-arm64" Version="7.1.7" />
     <PackageReference Include="Microsoft.ClearScript.V8.Native.win-x64" Version="7.1.7" />
     <PackageReference Include="Microsoft.DotNet.PlatformAbstractions" Version="3.1.6" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="6.0.0" />

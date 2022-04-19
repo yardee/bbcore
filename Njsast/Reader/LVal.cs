@@ -77,6 +77,9 @@ public sealed partial class Parser
                 case AstDefaultAssign _:
                     break;
 
+                case AstHole _:
+                    break;
+
                 default:
                     Raise(node.Start, "Assigning to rvalue");
                     break;
@@ -92,6 +95,10 @@ public sealed partial class Parser
         if (property == null)
             return null;
 
+        if (property is AstExpansion expansion)
+        {
+            return (AstObjectItem)ToAssignable(expansion as AstNode, isBinding);
+        }
         if (property is not AstObjectKeyVal kv)
             Raise(property.Start, "Object pattern can't contain getter or setter");
         else
